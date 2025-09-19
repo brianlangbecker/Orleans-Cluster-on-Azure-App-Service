@@ -327,4 +327,4 @@ ASALocalRun/
 *.nvuser
 
 # MFractors (Xamarin productivity tool) working folder 
-.mfractor/
+.mfractor/python-inventory-service/inventory-service.pid
