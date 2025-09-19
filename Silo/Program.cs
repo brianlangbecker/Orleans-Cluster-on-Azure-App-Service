@@ -3,14 +3,39 @@
 
 using Azure.Data.Tables;
 using Azure.Identity;
+using Microsoft.Data.Sqlite;
+using Orleans.ShoppingCart.Silo.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 if (builder.Environment.IsDevelopment())
 {
+    var useLocalDatabase = builder.Configuration.GetValue<bool>("UseLocalDatabase");
+    
     builder.UseOrleans(siloBuilder =>
     {
-        siloBuilder.UseLocalhostClustering().AddMemoryGrainStorage("shopping-cart");
+        siloBuilder.UseLocalhostClustering();
+        
+        if (useLocalDatabase)
+        {
+            var connectionString = builder.Configuration.GetConnectionString("LocalDatabaseConnectionString") 
+                ?? "Data Source=orleans_shopping_cart.db;Cache=Shared";
+            
+            siloBuilder.UseAdoNetClustering(options =>
+            {
+                options.ConnectionString = connectionString;
+                options.Invariant = "Microsoft.Data.Sqlite";
+            })
+            .AddAdoNetGrainStorage("shopping-cart", options =>
+            {
+                options.ConnectionString = connectionString;
+                options.Invariant = "Microsoft.Data.Sqlite";
+            });
+        }
+        else
+        {
+            siloBuilder.AddMemoryGrainStorage("shopping-cart");
+        }
     });
 }
 else
@@ -58,20 +83,18 @@ services.AddMudServices();
 services.AddRazorPages();
 services.AddServerSideBlazor();
 services.AddHttpContextAccessor();
+services.AddControllers(); // Add API controllers support
+services.AddHttpClient(); // Add HTTP client for calling Python service
 services.AddSingleton<ShoppingCartService>();
 services.AddSingleton<InventoryService>();
+services.AddSingleton<PythonInventoryService>(); // Add Python inventory service
 services.AddSingleton<ProductService>();
 services.AddScoped<ComponentStateChangedObserver>();
 services.AddSingleton<ToastService>();
 services.AddLocalStorageServices();
-var appInsightsConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
-if (!string.IsNullOrEmpty(appInsightsConnectionString))
-{
-    services.AddApplicationInsights("Silo");
-    builder.Logging.AddApplicationInsights((telemetry) => telemetry.ConnectionString = appInsightsConnectionString, logger => { });
-}
 
 builder.Services.AddHostedService<ProductStoreSeeder>();
+builder.Services.AddHostedService<DatabaseInitializationService>();
 
 var app = builder.Build();
 
@@ -89,6 +112,7 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 
+app.MapControllers(); // Map API controllers
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
 await app.RunAsync();

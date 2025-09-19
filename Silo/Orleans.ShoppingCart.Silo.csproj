@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
 	<IsTransformWebConfigDisabled>false</IsTransformWebConfigDisabled>
@@ -16,10 +16,14 @@
     <PackageReference Include="Blazor.LocalStorage" />
     <PackageReference Include="Bogus" />
     <PackageReference Include="Dumpify" />
-    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" />
     <PackageReference Include="Microsoft.Orleans.Clustering.AzureStorage" />
     <PackageReference Include="Microsoft.Orleans.Persistence.AzureStorage" />
     <PackageReference Include="Microsoft.Orleans.Server" />
+    
+    <!-- Local database dependencies -->
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="Microsoft.Orleans.Persistence.AdoNet" />
+    <PackageReference Include="Microsoft.Orleans.Clustering.AdoNet" />
     
     <PackageReference Include="MudBlazor" />
     
