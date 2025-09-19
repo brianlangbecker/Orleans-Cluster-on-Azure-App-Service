@@ -6,7 +6,7 @@
 set -e  # Exit on any error
 
 # Configuration
-PROJECT_DIR="/Users/brianlangbecker/Documents/GitHub/Orleans-Cluster-on-Azure-App-Service"
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SILO_DIR="$PROJECT_DIR/Silo"
 LOG_FILE="$SILO_DIR/orleans-app.log"
 PORT=5001
@@ -50,21 +50,21 @@ check_running() {
 # Stop existing application
 stop_application() {
     log_info "Stopping existing Orleans application..."
-    
+
     # Kill by port
     local pids=$(lsof -t -i :$PORT 2>/dev/null || true)
     if [ -n "$pids" ]; then
         kill $pids 2>/dev/null || true
         sleep 2
     fi
-    
+
     # Kill by process name (backup)
     pkill -f "dotnet run" 2>/dev/null || true
     pkill -f "$PROCESS_NAME" 2>/dev/null || true
-    
+
     # Wait for processes to stop
     sleep 3
-    
+
     if check_running; then
         log_warning "Force killing processes on port $PORT..."
         local pids=$(lsof -t -i :$PORT 2>/dev/null || true)
@@ -73,31 +73,31 @@ stop_application() {
         fi
         sleep 2
     fi
-    
+
     log_success "Application stopped"
 }
 
 # Start the application
 start_application() {
     log_info "Starting Orleans Shopping Cart application..."
-    
+
     # Change to silo directory
     cd "$SILO_DIR"
-    
+
     # Clear previous log
     > "$LOG_FILE"
-    
+
     # Start application in background
     ASPNETCORE_ENVIRONMENT=Development nohup dotnet run --urls "http://localhost:$PORT" > "$LOG_FILE" 2>&1 &
     local app_pid=$!
-    
+
     log_info "Application started with PID: $app_pid"
     log_info "Waiting for application to initialize..."
-    
+
     # Wait for application to start (max 30 seconds)
     local timeout=30
     local count=0
-    
+
     while [ $count -lt $timeout ]; do
         if check_running; then
             if grep -q "Now listening on" "$LOG_FILE" 2>/dev/null; then
@@ -105,19 +105,19 @@ start_application() {
                 return 0
             fi
         fi
-        
+
         # Check if process died
         if ! kill -0 $app_pid 2>/dev/null; then
             log_error "Application process died during startup"
             log_error "Check logs for details: tail $LOG_FILE"
             return 1
         fi
-        
+
         sleep 1
         count=$((count + 1))
         echo -n "."
     done
-    
+
     echo ""
     log_error "Application failed to start within $timeout seconds"
     log_error "Check logs for details: tail $LOG_FILE"
@@ -153,56 +153,56 @@ show_logs() {
 case "${1:-start}" in
     "start")
         log_info "Starting Orleans Shopping Cart Application"
-        
+
         # Check if already running
         if check_running; then
             log_warning "Application is already running on port $PORT"
             show_status
             exit 0
         fi
-        
+
         # Verify .NET is available
         if ! command -v dotnet >/dev/null 2>&1; then
             log_error ".NET SDK not found. Please install .NET 9 SDK."
             exit 1
         fi
-        
+
         # Verify project directory exists
         if [ ! -d "$PROJECT_DIR" ]; then
             log_error "Project directory not found: $PROJECT_DIR"
             exit 1
         fi
-        
+
         # Start application
         start_application
-        
+
         echo ""
         log_success "Orleans Shopping Cart is ready!"
         echo "  🌐 Open your browser to: http://localhost:$PORT"
         echo "  📋 View logs with: $0 logs"
         echo "  ⏹️  Stop with: $0 stop"
         ;;
-        
+
     "stop")
         log_info "Stopping Orleans Shopping Cart Application"
         stop_application
         ;;
-        
+
     "restart")
         log_info "Restarting Orleans Shopping Cart Application"
         stop_application
         sleep 2
         start_application
         ;;
-        
+
     "status")
         show_status
         ;;
-        
+
     "logs")
         show_logs
         ;;
-        
+
     "help"|"--help"|"-h")
         echo "Orleans Shopping Cart Application Runner"
         echo ""
@@ -218,7 +218,7 @@ case "${1:-start}" in
         echo ""
         echo "The application will be available at: http://localhost:$PORT"
         ;;
-        
+
     *)
         log_error "Unknown command: $1"
         echo "Use '$0 help' for usage information"

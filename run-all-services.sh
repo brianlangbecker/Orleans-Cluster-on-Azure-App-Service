@@ -6,7 +6,7 @@
 set -e  # Exit on any error
 
 # Configuration
-PROJECT_DIR="/Users/brianlangbecker/Documents/GitHub/Orleans-Cluster-on-Azure-App-Service"
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ORLEANS_SCRIPT="$PROJECT_DIR/run-orleans.sh"
 PYTHON_SCRIPT="$PROJECT_DIR/python-inventory-service/run-python-inventory.sh"
 ORLEANS_PORT=5001
@@ -71,48 +71,48 @@ check_python_healthy() {
 start_services() {
     log_info "Starting Orleans Shopping Cart with Python Inventory Microservice"
     echo ""
-    
+
     # Verify scripts exist
     if [ ! -f "$ORLEANS_SCRIPT" ]; then
         log_error "Orleans script not found: $ORLEANS_SCRIPT"
         exit 1
     fi
-    
+
     if [ ! -f "$PYTHON_SCRIPT" ]; then
         log_error "Python script not found: $PYTHON_SCRIPT"
         exit 1
     fi
-    
+
     # Check if services are already running
     local orleans_running=false
     local python_running=false
-    
+
     if check_orleans_running; then
         log_warning "Orleans application is already running on port $ORLEANS_PORT"
         orleans_running=true
     fi
-    
+
     if check_python_running; then
         log_warning "Python inventory service is already running on port $PYTHON_PORT"
         python_running=true
     fi
-    
+
     if [ "$orleans_running" = true ] && [ "$python_running" = true ]; then
         log_warning "Both services are already running"
         show_status
         exit 0
     fi
-    
+
     # Start Python inventory service first
     if [ "$python_running" = false ]; then
         log_service "Starting Python Inventory Service..."
         "$PYTHON_SCRIPT" start
-        
+
         # Wait for Python service to be ready
         log_info "Waiting for Python service to initialize..."
         local count=0
         local timeout=30
-        
+
         while [ $count -lt $timeout ]; do
             if check_python_healthy; then
                 log_success "Python Inventory Service is ready"
@@ -123,23 +123,23 @@ start_services() {
             echo -n "."
         done
         echo ""
-        
+
         if [ $count -eq $timeout ]; then
             log_error "Python service failed to start within $timeout seconds"
             exit 1
         fi
     fi
-    
+
     # Start Orleans application
     if [ "$orleans_running" = false ]; then
         log_service "Starting Orleans Application..."
         "$ORLEANS_SCRIPT" start
-        
+
         # Wait for Orleans to be ready
         log_info "Waiting for Orleans application to initialize..."
         local count=0
         local timeout=45
-        
+
         while [ $count -lt $timeout ]; do
             if check_orleans_healthy; then
                 log_success "Orleans Application is ready"
@@ -150,23 +150,23 @@ start_services() {
             echo -n "."
         done
         echo ""
-        
+
         if [ $count -eq $timeout ]; then
             log_error "Orleans application failed to start within $timeout seconds"
             exit 1
         fi
     fi
-    
+
     # Test integration
     log_info "Testing service integration..."
     sleep 2
-    
+
     if curl -s http://localhost:$ORLEANS_PORT/api/test/compare >/dev/null 2>&1; then
         log_success "Service integration test passed"
     else
         log_warning "Service integration test failed (services may still be starting)"
     fi
-    
+
     echo ""
     log_success "🎉 All services are running successfully!"
     echo ""
@@ -176,31 +176,31 @@ start_services() {
 # Stop all services
 stop_services() {
     log_info "Stopping all services..."
-    
+
     # Stop Orleans first (it may depend on Python service)
     if [ -f "$ORLEANS_SCRIPT" ]; then
         log_service "Stopping Orleans Application..."
         "$ORLEANS_SCRIPT" stop 2>/dev/null || true
     fi
-    
+
     # Stop Python service
     if [ -f "$PYTHON_SCRIPT" ]; then
         log_service "Stopping Python Inventory Service..."
         "$PYTHON_SCRIPT" stop 2>/dev/null || true
     fi
-    
+
     # Force kill any remaining processes on the ports
     local orleans_pids=$(lsof -t -i :$ORLEANS_PORT 2>/dev/null || true)
     local python_pids=$(lsof -t -i :$PYTHON_PORT 2>/dev/null || true)
-    
+
     if [ -n "$orleans_pids" ]; then
         kill $orleans_pids 2>/dev/null || true
     fi
-    
+
     if [ -n "$python_pids" ]; then
         kill $python_pids 2>/dev/null || true
     fi
-    
+
     sleep 2
     log_success "All services stopped"
 }
@@ -218,7 +218,7 @@ show_status() {
     echo ""
     log_info "Service Status Report"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    
+
     # Orleans status
     if check_orleans_running; then
         if check_orleans_healthy; then
@@ -230,7 +230,7 @@ show_status() {
     else
         log_error "Orleans Application: NOT RUNNING"
     fi
-    
+
     # Python status
     if check_python_running; then
         if check_python_healthy; then
@@ -243,9 +243,9 @@ show_status() {
     else
         log_error "Python Inventory Service: NOT RUNNING"
     fi
-    
+
     echo ""
-    
+
     # Integration status
     if check_orleans_running && check_python_running; then
         if curl -s http://localhost:$ORLEANS_PORT/api/test/compare >/dev/null 2>&1; then
@@ -257,7 +257,7 @@ show_status() {
     else
         log_warning "Service Integration: CANNOT TEST (services not running)"
     fi
-    
+
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
 }
@@ -283,7 +283,7 @@ show_logs() {
     echo ""
     log_info "Recent logs from all services"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    
+
     echo ""
     echo "🔹 Orleans Application Logs (last 10 lines):"
     if [ -f "$PROJECT_DIR/Silo/orleans-app.log" ]; then
@@ -291,7 +291,7 @@ show_logs() {
     else
         echo "  No Orleans log file found"
     fi
-    
+
     echo ""
     echo "🔹 Python Inventory Service Logs (last 10 lines):"
     if [ -f "$PROJECT_DIR/python-inventory-service/inventory-service.log" ]; then
@@ -299,7 +299,7 @@ show_logs() {
     else
         echo "  No Python log file found"
     fi
-    
+
     echo ""
     echo "To follow logs in real-time:"
     echo "  Orleans:  tail -f $PROJECT_DIR/Silo/orleans-app.log"
@@ -310,17 +310,17 @@ show_logs() {
 # Test service integration
 test_integration() {
     log_info "Testing service integration..."
-    
+
     if ! check_orleans_running || ! check_python_running; then
         log_error "Both services must be running for integration tests"
         log_info "Start services with: $0 start"
         exit 1
     fi
-    
+
     echo ""
     echo "🧪 Running Integration Tests:"
     echo ""
-    
+
     # Test Orleans products
     echo "1. Testing Orleans products endpoint..."
     if curl -s http://localhost:$ORLEANS_PORT/api/test/orleans-products | head -c 100 >/dev/null; then
@@ -328,7 +328,7 @@ test_integration() {
     else
         log_error "Orleans products endpoint: FAILED"
     fi
-    
+
     # Test Python health
     echo "2. Testing Python health endpoint..."
     if curl -s http://localhost:$PYTHON_PORT/health >/dev/null; then
@@ -336,7 +336,7 @@ test_integration() {
     else
         log_error "Python health endpoint: FAILED"
     fi
-    
+
     # Test service comparison
     echo "3. Testing service comparison endpoint..."
     if curl -s http://localhost:$ORLEANS_PORT/api/test/compare >/dev/null; then
@@ -344,7 +344,7 @@ test_integration() {
     else
         log_error "Service comparison endpoint: FAILED"
     fi
-    
+
     echo ""
     log_success "Integration test completed"
     echo ""
@@ -358,31 +358,31 @@ case "${1:-start}" in
     "start")
         start_services
         ;;
-        
+
     "stop")
         stop_services
         ;;
-        
+
     "restart")
         restart_services
         ;;
-        
+
     "status")
         show_status
         ;;
-        
+
     "logs")
         show_logs
         ;;
-        
+
     "test")
         test_integration
         ;;
-        
+
     "urls")
         show_urls
         ;;
-        
+
     "help"|"--help"|"-h")
         echo "Orleans + Python Microservices Manager"
         echo ""
@@ -408,7 +408,7 @@ case "${1:-start}" in
         echo "This demonstrates a polyglot microservices architecture with"
         echo "C# Orleans + Python FastAPI integration."
         ;;
-        
+
     *)
         log_error "Unknown command: $1"
         echo "Use '$0 help' for usage information"
