@@ -2,9 +2,10 @@
 
 This project demonstrates observability features (metrics, logs, traces) across a full-stack hybrid deployment setup.
 
-## Project Goals and Requirements
+## Project Documentation
 
-For complete project requirements, functional specifications, and use cases, see: [docs/Goals.md](../docs/Goals.md)
+- **Project Goals and Requirements**: [docs/Goals.md](../docs/Goals.md) - Complete functional specifications and 14 use cases to demonstrate
+- **Instrumentation Architecture**: [docs/Instrumentation-Architecture.md](../docs/Instrumentation-Architecture.md) - Comprehensive observability strategy using OpenTelemetry and Honeycomb.io
 
 ## Key Architecture Components
 
@@ -29,4 +30,11 @@ The project currently has:
 3. Connect to shared Azure cloud database
 4. Implement required use cases for demonstration
 
-See [docs/Goals.md](../docs/Goals.md) for detailed requirements and 14 specific use cases to demonstrate.
+## Implementation Status
+
+**Current Phase**: Planning and Architecture Design
+- ✅ Project requirements documented
+- ✅ Instrumentation architecture designed
+- 🔄 Ready to begin Phase 1: Foundation Setup (OpenTelemetry integration)
+
+See project documentation above for detailed requirements and implementation strategy.
