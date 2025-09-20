@@ -34,7 +34,7 @@ The project currently has:
 
 **Current Phase**: Planning and Architecture Design
 - ✅ Project requirements documented
-- ✅ Instrumentation architecture designed
-- 🔄 Ready to begin Phase 1: Foundation Setup (OpenTelemetry integration)
+- ✅ Instrumentation architecture designed (6-layer observability strategy)
+- 🔄 Ready to begin Phase 1: Foundation Setup (Frontend & Backend OpenTelemetry integration)
 
 See project documentation above for detailed requirements and implementation strategy.
