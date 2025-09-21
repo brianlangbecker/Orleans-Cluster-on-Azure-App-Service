@@ -10,9 +10,11 @@ PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ORLEANS_SCRIPT="$PROJECT_DIR/run-orleans.sh"
 PYTHON_SCRIPT="$PROJECT_DIR/python-inventory-service/run-python-inventory.sh"
 REACT_SCRIPT="$PROJECT_DIR/shopping-cart-ui/run-react-ui.sh"
+OTEL_SCRIPT="$PROJECT_DIR/run-otel-collector.sh"
 ORLEANS_PORT=5001
 PYTHON_PORT=8000
 REACT_PORT=3000
+OTEL_PORT=4318
 
 # Colors for output
 RED='\033[0;31m'
@@ -68,6 +70,14 @@ check_react_running() {
     fi
 }
 
+check_otel_running() {
+    if lsof -i :$OTEL_PORT >/dev/null 2>&1; then
+        return 0  # Running
+    else
+        return 1  # Not running
+    fi
+}
+
 # Check if services are healthy
 check_orleans_healthy() {
     curl -s http://localhost:$ORLEANS_PORT >/dev/null 2>&1
@@ -79,6 +89,10 @@ check_python_healthy() {
 
 check_react_healthy() {
     curl -s http://localhost:$REACT_PORT >/dev/null 2>&1
+}
+
+check_otel_healthy() {
+    curl -s http://localhost:$OTEL_PORT/health >/dev/null 2>&1
 }
 
 # Start all services
@@ -102,10 +116,16 @@ start_services() {
         exit 1
     fi
 
+    if [ ! -f "$OTEL_SCRIPT" ]; then
+        log_error "OpenTelemetry Collector script not found: $OTEL_SCRIPT"
+        exit 1
+    fi
+
     # Check if services are already running
     local orleans_running=false
     local python_running=false
     local react_running=false
+    local otel_running=false
 
     if check_orleans_running; then
         log_warning "Orleans application is already running on port $ORLEANS_PORT"
@@ -122,13 +142,45 @@ start_services() {
         react_running=true
     fi
 
-    if [ "$orleans_running" = true ] && [ "$python_running" = true ] && [ "$react_running" = true ]; then
+    if check_otel_running; then
+        log_warning "OpenTelemetry Collector is already running on port $OTEL_PORT"
+        otel_running=true
+    fi
+
+    if [ "$orleans_running" = true ] && [ "$python_running" = true ] && [ "$react_running" = true ] && [ "$otel_running" = true ]; then
         log_warning "All services are already running"
         show_status
         exit 0
     fi
 
-    # Start Python inventory service first
+    # Start OpenTelemetry Collector first
+    if [ "$otel_running" = false ]; then
+        log_service "Starting OpenTelemetry Collector..."
+        "$OTEL_SCRIPT" start
+
+        # Wait for collector to be ready
+        log_info "Waiting for OpenTelemetry Collector to initialize..."
+        local count=0
+        local timeout=30
+
+        while [ $count -lt $timeout ]; do
+            if check_otel_healthy; then
+                log_success "OpenTelemetry Collector is ready"
+                break
+            fi
+            sleep 1
+            count=$((count + 1))
+            echo -n "."
+        done
+        echo ""
+
+        if [ $count -eq $timeout ]; then
+            log_error "OpenTelemetry Collector failed to start within $timeout seconds"
+            exit 1
+        fi
+    fi
+
+    # Start Python inventory service
     if [ "$python_running" = false ]; then
         log_service "Starting Python Inventory Service..."
         "$PYTHON_SCRIPT" start
@@ -247,10 +299,17 @@ stop_services() {
         "$PYTHON_SCRIPT" stop 2>/dev/null || true
     fi
 
+    # Stop OpenTelemetry Collector last
+    if [ -f "$OTEL_SCRIPT" ]; then
+        log_service "Stopping OpenTelemetry Collector..."
+        "$OTEL_SCRIPT" stop 2>/dev/null || true
+    fi
+
     # Force kill any remaining processes on the ports
     local react_pids=$(lsof -t -i :$REACT_PORT 2>/dev/null || true)
     local orleans_pids=$(lsof -t -i :$ORLEANS_PORT 2>/dev/null || true)
     local python_pids=$(lsof -t -i :$PYTHON_PORT 2>/dev/null || true)
+    local otel_pids=$(lsof -t -i :$OTEL_PORT 2>/dev/null || true)
 
     if [ -n "$react_pids" ]; then
         kill $react_pids 2>/dev/null || true
@@ -262,6 +321,10 @@ stop_services() {
 
     if [ -n "$python_pids" ]; then
         kill $python_pids 2>/dev/null || true
+    fi
+
+    if [ -n "$otel_pids" ]; then
+        kill $otel_pids 2>/dev/null || true
     fi
 
     sleep 2
@@ -345,6 +408,7 @@ show_urls() {
     echo "  Orleans API Test:       http://localhost:$ORLEANS_PORT/api/test/compare"
     echo "  Python API:             http://localhost:$PYTHON_PORT"
     echo "  Python API Docs:        http://localhost:$PYTHON_PORT/docs"
+    echo "  OpenTelemetry:          http://localhost:$OTEL_PORT"
     echo ""
     echo "📋 Management Commands:"
     echo "  View logs:              $0 logs"

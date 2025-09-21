@@ -50,10 +50,11 @@ def get_telemetry_config() -> dict:
         "service_name": os.getenv("OTEL_SERVICE_NAME", "python-inventory"),
         "service_version": os.getenv("OTEL_SERVICE_VERSION", "1.0.0"),
         "environment": os.getenv("ENVIRONMENT", "development"),
-        "honeycomb_endpoint": os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "https://api.honeycomb.io"),
+        "honeycomb_endpoint": os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4318"),
         "honeycomb_api_key": os.getenv("HONEYCOMB_API_KEY"),
         "enable_debug": os.getenv("OTEL_DEBUG", "false").lower() == "true",
         "service_instance_id": os.getenv("HOSTNAME", os.uname().nodename),
+        "enable_metrics": os.getenv("OTEL_ENABLE_METRICS", "true").lower() == "true",
     }
 
 

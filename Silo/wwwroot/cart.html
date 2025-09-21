@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orleans Shopping Cart - Cart</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .header {
+            background: #594ae2;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .nav {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .nav a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .nav a:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .cart-badge {
+            background: #ff4081;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 8px;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+        
+        .cart-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .cart-item:last-child {
+            border-bottom: none;
+        }
+        
+        .item-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .item-image {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+        
+        .item-details h3 {
+            margin: 0 0 5px 0;
+            color: #333;
+        }
+        
+        .item-details p {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .item-price {
+            font-size: 18px;
+            font-weight: bold;
+            color: #594ae2;
+        }
+        
+        .quantity-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 5px 0;
+        }
+        
+        .quantity-btn {
+            background: #594ae2;
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .quantity-btn:hover {
+            background: #4527a0;
+        }
+        
+        .quantity-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .quantity-display {
+            min-width: 30px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .remove-btn {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .remove-btn:hover {
+            background: #d32f2f;
+        }
+        
+        .cart-total {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 4px;
+            margin-top: 20px;
+            text-align: right;
+        }
+        
+        .total-price {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .checkout-btn {
+            background: #00c853;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        
+        .checkout-btn:hover {
+            background: #00a043;
+        }
+        
+        .clear-cart-btn {
+            background: #757575;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        
+        .clear-cart-btn:hover {
+            background: #616161;
+        }
+        
+        .empty-cart {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .error {
+            background: #f44336;
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        
+        .success {
+            background: #4caf50;
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Orleans Shopping Cart</h1>
+        <div class="nav">
+            <a href="/">Home</a>
+            <a href="/shop.html">Shop</a>
+            <a href="/cart.html">Cart <span id="cart-badge" class="cart-badge">0</span></a>
+            <a href="/products">Manage Products</a>
+        </div>
+    </div>
+    
+    <div id="message-area"></div>
+    
+    <div id="loading" class="loading">Loading cart...</div>
+    
+    <div id="cart-container" class="cart-container" style="display: none;">
+        <h2>Shopping Cart</h2>
+        <div id="cart-items"></div>
+        <div id="cart-total" class="cart-total" style="display: none;">
+            <div class="total-price">Total: $<span id="total-amount">0.00</span></div>
+            <button class="clear-cart-btn" onclick="clearCart()">Clear Cart</button>
+            <button class="checkout-btn" onclick="checkout()">Checkout</button>
+        </div>
+    </div>
+
+    <script>
+        let cartItems = [];
+        
+        // Load cart when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCart();
+        });
+        
+        async function loadCart() {
+            try {
+                console.log('Loading cart...');
+                const response = await fetch('/api/shop/cart');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('Cart loaded:', data);
+                
+                if (data.success) {
+                    cartItems = data.items || [];
+                    displayCart();
+                    updateCartBadge(data.count);
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('cart-container').style.display = 'block';
+                } else {
+                    showMessage('Failed to load cart', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading cart:', error);
+                showMessage(`Error loading cart: ${error.message}`, 'error');
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+        
+        function displayCart() {
+            const container = document.getElementById('cart-items');
+            const totalContainer = document.getElementById('cart-total');
+            
+            if (cartItems.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-cart">
+                        <h3>Your cart is empty</h3>
+                        <p>Add some items from the <a href="/shop.html">shop</a> to get started!</p>
+                    </div>
+                `;
+                totalContainer.style.display = 'none';
+                return;
+            }
+            
+            let totalPrice = 0;
+            container.innerHTML = cartItems.map(item => {
+                const itemTotal = item.quantity * item.unitPrice;
+                totalPrice += itemTotal;
+                
+                return `
+                    <div class="cart-item">
+                        <div class="item-info">
+                            <img src="${item.imageUrl}" alt="${item.productName}" class="item-image" 
+                                 onerror="this.src='https://via.placeholder.com/60x60?text=Product'">
+                            <div class="item-details">
+                                <h3>${item.productName}</h3>
+                                <p>$${item.unitPrice.toFixed(2)} each</p>
+                                <div class="quantity-controls">
+                                    <button class="quantity-btn" onclick="updateQuantity('${item.productId}', ${item.quantity - 1})" 
+                                            ${item.quantity <= 1 ? 'disabled' : ''}>−</button>
+                                    <span class="quantity-display">${item.quantity}</span>
+                                    <button class="quantity-btn" onclick="updateQuantity('${item.productId}', ${item.quantity + 1})">+</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <div class="item-price">$${itemTotal.toFixed(2)}</div>
+                            <button class="remove-btn" onclick="removeFromCart('${item.productId}', '${item.productName}')">
+                                Remove
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            document.getElementById('total-amount').textContent = totalPrice.toFixed(2);
+            totalContainer.style.display = 'block';
+        }
+        
+        async function updateQuantity(productId, newQuantity) {
+            if (newQuantity <= 0) {
+                return; // Don't allow zero or negative quantities
+            }
+            
+            try {
+                console.log(`Updating product ${productId} quantity to ${newQuantity}...`);
+                
+                const response = await fetch(`/api/shop/cart/update/${productId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ quantity: newQuantity })
+                });
+                
+                const data = await response.json();
+                console.log('Update quantity response:', data);
+                
+                if (data.success) {
+                    showMessage(data.message, 'success');
+                    loadCart(); // Reload cart to show updated totals
+                } else {
+                    showMessage(data.error || 'Failed to update quantity', 'error');
+                }
+            } catch (error) {
+                console.error('Error updating quantity:', error);
+                showMessage(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function removeFromCart(productId, productName) {
+            try {
+                console.log(`Removing product ${productId} from cart...`);
+                
+                const response = await fetch(`/api/shop/cart/remove/${productId}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                console.log('Remove from cart response:', data);
+                
+                if (data.success) {
+                    showMessage(data.message, 'success');
+                    loadCart(); // Reload cart
+                } else {
+                    showMessage(data.error || 'Failed to remove item from cart', 'error');
+                }
+            } catch (error) {
+                console.error('Error removing from cart:', error);
+                showMessage(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function clearCart() {
+            if (!confirm('Are you sure you want to clear your cart?')) {
+                return;
+            }
+            
+            try {
+                console.log('Clearing cart...');
+                
+                const response = await fetch('/api/shop/cart/clear', {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                console.log('Clear cart response:', data);
+                
+                if (data.success) {
+                    showMessage(data.message, 'success');
+                    loadCart(); // Reload cart
+                } else {
+                    showMessage(data.error || 'Failed to clear cart', 'error');
+                }
+            } catch (error) {
+                console.error('Error clearing cart:', error);
+                showMessage(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        function checkout() {
+            if (cartItems.length === 0) {
+                showMessage('Your cart is empty!', 'error');
+                return;
+            }
+            
+            showMessage('Checkout functionality coming soon!', 'success');
+        }
+        
+        function updateCartBadge(count) {
+            document.getElementById('cart-badge').textContent = count;
+        }
+        
+        function showMessage(message, type) {
+            const messageArea = document.getElementById('message-area');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = type;
+            messageDiv.textContent = message;
+            
+            messageArea.appendChild(messageDiv);
+            
+            // Remove message after 3 seconds
+            setTimeout(() => {
+                messageArea.removeChild(messageDiv);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

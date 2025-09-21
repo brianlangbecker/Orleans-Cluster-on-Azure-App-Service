@@ -8,9 +8,11 @@ from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
+from opentelemetry.trace import Status, StatusCode
 
 from models import ProductDetails, ProductCategory
 from inventory_service import InventoryService
+from telemetry import initialize_telemetry, get_tracer, get_meter, get_custom_metrics
 
 
 # Configure logging
@@ -23,6 +25,12 @@ app = FastAPI(
     description="Inventory management service for Orleans Shopping Cart",
     version="1.0.0"
 )
+
+# Initialize OpenTelemetry
+initialize_telemetry(app)
+tracer = get_tracer()
+meter = get_meter()
+metrics = get_custom_metrics()
 
 # Configure CORS to allow Orleans app to call this service
 app.add_middleware(
@@ -97,25 +105,44 @@ async def root():
     }
 
 
-@app.get("/health", response_model=HealthResponse, summary="Health check")
+@app.get("/health", include_in_schema=False)
 async def health_check():
-    """Health check endpoint"""
-    health_data = await inventory_service.health_check_async()
-    return HealthResponse(**health_data)
+    """Health check endpoint (no telemetry)"""
+    return {"status": "ok"}
 
 
 @app.get("/products", response_model=List[ProductResponse], summary="Get all products")
 async def get_all_products():
     """Get all products from all categories"""
-    try:
-        products = await inventory_service.get_all_products_async()
-        return [product_to_response(product) for product in products]
-    except Exception as e:
-        logger.error(f"Error getting all products: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve products: {str(e)}"
-        )
+    with tracer.start_as_current_span("get_all_products") as span:
+        try:
+            start_time = asyncio.get_event_loop().time()
+            products = await inventory_service.get_all_products_async()
+            duration = asyncio.get_event_loop().time() - start_time
+            
+            # Record metrics
+            metrics["operations"].add(1, {"operation": "get_all_products"})
+            metrics["product_count"].add(len(products), {"source": "get_all_products"})
+            metrics["request_duration"].record(duration, {"operation": "get_all_products"})
+            
+            # Add span attributes
+            span.set_attributes({
+                "product.count": len(products),
+                "request.duration": duration,
+                "success": True
+            })
+            
+            return [product_to_response(product) for product in products]
+        except Exception as e:
+            logger.error(f"Error getting all products: {e}")
+            # Record error in span
+            span.set_status(Status(StatusCode.ERROR, str(e)))
+            span.record_exception(e)
+            metrics["operations"].add(1, {"operation": "get_all_products", "status": "error"})
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to retrieve products: {str(e)}"
+            )
 
 
 @app.get("/products/{product_id}", response_model=ProductResponse, summary="Get product by ID")

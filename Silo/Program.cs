@@ -4,38 +4,21 @@
 using Azure.Data.Tables;
 using Azure.Identity;
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.FileProviders;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+using OpenTelemetry.Instrumentation.AspNetCore;
+using OpenTelemetry.Instrumentation.Http;
 using Orleans.ShoppingCart.Silo.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 if (builder.Environment.IsDevelopment())
 {
-    var useLocalDatabase = builder.Configuration.GetValue<bool>("UseLocalDatabase");
-    
     builder.UseOrleans(siloBuilder =>
     {
-        siloBuilder.UseLocalhostClustering();
-        
-        if (useLocalDatabase)
-        {
-            var connectionString = builder.Configuration.GetConnectionString("LocalDatabaseConnectionString") 
-                ?? "Data Source=orleans_shopping_cart.db;Cache=Shared";
-            
-            siloBuilder.UseAdoNetClustering(options =>
-            {
-                options.ConnectionString = connectionString;
-                options.Invariant = "Microsoft.Data.Sqlite";
-            })
-            .AddAdoNetGrainStorage("shopping-cart", options =>
-            {
-                options.ConnectionString = connectionString;
-                options.Invariant = "Microsoft.Data.Sqlite";
-            });
-        }
-        else
-        {
-            siloBuilder.AddMemoryGrainStorage("shopping-cart");
-        }
+        siloBuilder.UseLocalhostClustering()
+                  .AddMemoryGrainStorage("shopping-cart");
     });
 }
 else
@@ -93,6 +76,23 @@ services.AddScoped<ComponentStateChangedObserver>();
 services.AddSingleton<ToastService>();
 services.AddLocalStorageServices();
 
+// Configure OpenTelemetry
+services.AddOpenTelemetry()
+    .WithTracing(builder => builder
+        .AddSource("Orleans.ShoppingCart")
+        .SetResourceBuilder(ResourceBuilder.CreateDefault()
+            .AddService("orleans-shopping-cart"))
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddOtlpExporter(options =>
+        {
+            options.Endpoint = new Uri(Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT") ?? "http://localhost:4318/v1/traces");
+            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("HONEYCOMB_API_KEY")))
+            {
+                options.Headers = $"x-honeycomb-team={Environment.GetEnvironmentVariable("HONEYCOMB_API_KEY")}";
+            }
+        }));
+
 builder.Services.AddHostedService<ProductStoreSeeder>();
 builder.Services.AddHostedService<DatabaseInitializationService>();
 
@@ -109,10 +109,36 @@ else
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+
+// Configure static files to serve React app from Orleans
+app.UseDefaultFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(
+        Path.Combine(Directory.GetCurrentDirectory(), "../shopping-cart-ui/dist")),
+    RequestPath = ""
+});
+
 app.UseRouting();
 
+// SPA fallback for React Router - serve index.html for all non-API routes
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path.Value?.ToLower() ?? "";
+    
+    // Don't handle API calls, health checks, static assets, or Blazor routes
+    if (path.StartsWith("/api") || path.StartsWith("/health") || 
+        path.StartsWith("/assets") || path.Contains(".") ||
+        path.StartsWith("/_blazor") || path.StartsWith("/_framework"))
+    {
+        await next();
+        return;
+    }
+    
+    // For all other routes, serve the React app index.html
+    context.Request.Path = "/index.html";
+    await next();
+});
+
 app.MapControllers(); // Map API controllers
-app.MapBlazorHub();
-app.MapFallbackToPage("/_Host");
 await app.RunAsync();

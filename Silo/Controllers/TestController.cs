@@ -67,13 +67,11 @@ public class TestController : ControllerBase
         {
             var orléansTask = _orléansInventoryService.GetAllProductsAsync();
             var pythonTask = _pythonInventoryService.GetAllProductsAsync();
-            var healthTask = _pythonInventoryService.IsServiceHealthyAsync();
 
-            await Task.WhenAll(orléansTask, pythonTask, healthTask);
+            await Task.WhenAll(orléansTask, pythonTask);
 
             var orléansProducts = orléansTask.Result;
             var pythonProducts = pythonTask.Result;
-            var pythonHealthy = healthTask.Result;
 
             return Ok(new
             {
@@ -86,7 +84,6 @@ public class TestController : ControllerBase
                 python = new
                 {
                     source = "Python Microservice",
-                    healthy = pythonHealthy,
                     count = pythonProducts.Count,
                     sample = pythonProducts.Take(2)
                 },
