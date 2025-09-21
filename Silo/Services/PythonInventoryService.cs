@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Diagnostics;
 
 namespace Orleans.ShoppingCart.Silo.Services;
 
@@ -7,6 +8,8 @@ namespace Orleans.ShoppingCart.Silo.Services;
 /// </summary>
 public sealed class PythonInventoryService
 {
+    private static readonly ActivitySource ActivitySource = new("Orleans.ShoppingCart.Services", "1.0.0");
+    
     private readonly HttpClient _httpClient;
     private readonly ILogger<PythonInventoryService> _logger;
     private readonly string _pythonServiceUrl;
@@ -20,6 +23,11 @@ public sealed class PythonInventoryService
 
     public async Task<HashSet<ProductDetails>> GetAllProductsAsync()
     {
+        using var activity = ActivitySource.StartActivity("PythonInventoryService.GetAllProducts");
+        activity?.SetTag("service.name", "python-inventory");
+        activity?.SetTag("operation", "get_all_products");
+        activity?.SetTag("python.service.url", _pythonServiceUrl);
+        
         try
         {
             _logger.LogInformation("Calling Python inventory service at {Url}/products", _pythonServiceUrl);
@@ -44,12 +52,18 @@ public sealed class PythonInventoryService
                 }
 
                 _logger.LogInformation("Successfully retrieved {Count} products from Python service", result.Count);
+                activity?.SetTag("success", true);
+                activity?.SetTag("products.count", result.Count);
                 return result;
             }
             else
             {
                 _logger.LogWarning("Python inventory service returned {StatusCode}: {ReasonPhrase}", 
                     response.StatusCode, response.ReasonPhrase);
+                
+                activity?.SetTag("success", false);
+                activity?.SetTag("http.status_code", (int)response.StatusCode);
+                activity?.SetTag("error", $"HTTP {response.StatusCode}: {response.ReasonPhrase}");
                 
                 // Fallback to empty set
                 return new HashSet<ProductDetails>();
@@ -58,29 +72,53 @@ public sealed class PythonInventoryService
         catch (HttpRequestException ex)
         {
             _logger.LogError(ex, "Network error calling Python inventory service at {Url}", _pythonServiceUrl);
+            activity?.SetTag("success", false);
+            activity?.SetTag("error", ex.Message);
+            activity?.SetTag("error.type", "network");
             return new HashSet<ProductDetails>();
         }
         catch (JsonException ex)
         {
             _logger.LogError(ex, "JSON deserialization error from Python inventory service");
+            activity?.SetTag("success", false);
+            activity?.SetTag("error", ex.Message);
+            activity?.SetTag("error.type", "json_deserialization");
             return new HashSet<ProductDetails>();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error calling Python inventory service");
+            activity?.SetTag("success", false);
+            activity?.SetTag("error", ex.Message);
+            activity?.SetTag("error.type", "unexpected");
             return new HashSet<ProductDetails>();
         }
     }
 
     public async Task<bool> IsServiceHealthyAsync()
     {
+        using var activity = ActivitySource.StartActivity("PythonInventoryService.IsServiceHealthy");
+        activity?.SetTag("service.name", "python-inventory");
+        activity?.SetTag("operation", "health_check");
+        activity?.SetTag("python.service.url", _pythonServiceUrl);
+        
         try
         {
             var response = await _httpClient.GetAsync($"{_pythonServiceUrl}/health");
-            return response.IsSuccessStatusCode;
+            var isHealthy = response.IsSuccessStatusCode;
+            
+            activity?.SetTag("success", true);
+            activity?.SetTag("python.healthy", isHealthy);
+            activity?.SetTag("http.status_code", (int)response.StatusCode);
+            
+            return isHealthy;
         }
-        catch
+        catch (Exception ex)
         {
+            activity?.SetTag("success", false);
+            activity?.SetTag("python.healthy", false);
+            activity?.SetTag("error", ex.Message);
+            
             return false;
         }
     }

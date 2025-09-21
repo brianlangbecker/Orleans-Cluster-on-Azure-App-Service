@@ -80,10 +80,23 @@ services.AddLocalStorageServices();
 services.AddOpenTelemetry()
     .WithTracing(builder => builder
         .AddSource("Orleans.ShoppingCart")
+        .AddSource("Orleans.ShoppingCart.API")
+        .AddSource("Orleans.ShoppingCart.Services")
         .SetResourceBuilder(ResourceBuilder.CreateDefault()
             .AddService("orleans-shopping-cart"))
         .AddAspNetCoreInstrumentation()
-        .AddHttpClientInstrumentation()
+        .AddHttpClientInstrumentation(options =>
+        {
+            options.EnrichWithHttpRequestMessage = (activity, httpRequestMessage) =>
+            {
+                activity?.SetTag("http.request.method", httpRequestMessage.Method.ToString());
+                activity?.SetTag("http.request.uri", httpRequestMessage.RequestUri?.ToString());
+            };
+            options.EnrichWithHttpResponseMessage = (activity, httpResponseMessage) =>
+            {
+                activity?.SetTag("http.response.status_code", (int)httpResponseMessage.StatusCode);
+            };
+        })
         .AddOtlpExporter(options =>
         {
             options.Endpoint = new Uri(Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT") ?? "http://localhost:4318/v1/traces");

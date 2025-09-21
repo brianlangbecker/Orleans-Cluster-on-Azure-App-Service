@@ -12,6 +12,8 @@ processors:
     send_batch_size: 1024
 
 exporters:
+  debug:
+    verbosity: detailed
   otlp:
     endpoint: "api.honeycomb.io:443"
     headers:
@@ -22,4 +24,4 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlp]
+      exporters: [debug, otlp]

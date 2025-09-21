@@ -87,8 +87,15 @@ start_application() {
     # Clear previous log
     > "$LOG_FILE"
 
-    # Start application in background
-    ASPNETCORE_ENVIRONMENT=Development nohup dotnet run --urls "http://localhost:$PORT" > "$LOG_FILE" 2>&1 &
+    # Load environment variables from .env file
+    if [ -f "$PROJECT_DIR/.env" ]; then
+        export $(grep -v '^#' "$PROJECT_DIR/.env" | xargs)
+    fi
+    
+    # Start application in background with hardcoded environment variables
+    ASPNETCORE_ENVIRONMENT=Development \
+    OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4318/v1/traces" \
+    nohup dotnet run --urls "http://localhost:$PORT" > "$LOG_FILE" 2>&1 &
     local app_pid=$!
 
     log_info "Application started with PID: $app_pid"
