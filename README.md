@@ -1,59 +1,125 @@
-# Microsoft Orleans: Shopping Cart App
+# Microsoft Orleans: Shopping Cart App with React Frontend
 
 [![Deploy to Azure App Service](https://github.com/Azure-Samples/Orleans-Cluster-on-Azure-App-Service/actions/workflows/deploy.yml/badge.svg)](https://github.com/Azure-Samples/Orleans-Cluster-on-Azure-App-Service/actions/workflows/deploy.yml)
 
-A canonical shopping cart sample application, built using Microsoft Orleans. This app shows the following features:
+A modern shopping cart application built with Microsoft Orleans and React. This app demonstrates a polyglot microservices architecture with:
 
-- **Shopping cart**: A simple shopping cart application that uses Orleans for its cross-platform framework support, and its scalable distributed applications capabilities.
-
-  - **Inventory management**: Edit and/or create product inventory.
-  - **Shop inventory**: Explore purchasable products and add them to your cart.
-  - **Cart**: View a summary of all the items in your cart, and manage these items; either removing or changing the quantity of each item.
-
-![Shopping Cart sample app running.](media/shopping-cart.png)
+-   **React Frontend**: Modern, responsive UI built with TypeScript and Material-UI
+-   **Orleans Backend**: Scalable, distributed .NET application
+-   **Python Inventory Service**: FastAPI-based microservice
 
 ## Features
 
-- [.NET 8](https://docs.microsoft.com/dotnet/core/whats-new/dotnet-8)
-- [ASP.NET Core Blazor](https://docs.microsoft.com/aspnet/core/blazor/?view=aspnetcore-6.0)
-- [Orleans: Grain persistence](https://docs.microsoft.com/dotnet/orleans/grains/grain-persistence)
-  - [Azure Storage grain persistence](https://docs.microsoft.com/dotnet/orleans/grains/grain-persistence/azure-storage)
-- [Orleans: Cluster management](https://docs.microsoft.com/dotnet/orleans/implementation/cluster-management)
-- [Orleans: Code generation](https://docs.microsoft.com/dotnet/orleans/grains/code-generation)
-- [Azure Bicep](https://docs.microsoft.com/azure/azure-resource-manager/bicep)
-- [Azure App Service](https://docs.microsoft.com/azure/app-service/overview)
-- [GitHub Actions and .NET](https://docs.microsoft.com/dotnet/devops/github-actions-overview)
+### Frontend (React)
+
+-   Modern React with TypeScript
+-   Material-UI (MUI) components for a polished UI
+-   React Query for efficient data fetching and caching
+-   OpenTelemetry instrumentation for frontend monitoring
+-   Responsive design that works on all devices
+
+### Backend (Orleans)
+
+-   [.NET 9](https://docs.microsoft.com/dotnet/core/whats-new/dotnet-9)
+-   [Orleans: Grain persistence](https://docs.microsoft.com/dotnet/orleans/grains/grain-persistence)
+    -   [Azure Storage grain persistence](https://docs.microsoft.com/dotnet/orleans/grains/grain-persistence/azure-storage)
+-   [Orleans: Cluster management](https://docs.microsoft.com/dotnet/orleans/implementation/cluster-management)
+-   [Orleans: Code generation](https://docs.microsoft.com/dotnet/orleans/grains/code-generation)
+
+### Inventory Service (Python)
+
+-   FastAPI-based RESTful API
+-   OpenAPI documentation
+-   Health monitoring
+-   Integration with Orleans backend
+
+### Infrastructure
+
+-   [Azure Bicep](https://docs.microsoft.com/azure/azure-resource-manager/bicep)
+-   [Azure App Service](https://docs.microsoft.com/azure/app-service/overview)
+-   [GitHub Actions and .NET](https://docs.microsoft.com/dotnet/devops/github-actions-overview)
+
+## Architecture
 
 The app is architected as follows:
 
 ![Shopping Cart sample app architecture.](media/shopping-cart-arch.png)
 
-## Get Started
+## Getting Started
 
 ### Prerequisites
 
-- A [GitHub account](https://github.com/join)
-- The [.NET 9 SDK or later](https://dotnet.microsoft.com/download/dotnet)
-- The [Azure CLI](/cli/azure/install-azure-cli)
-- A .NET integrated development environment (IDE)
-  - Feel free to use the [Visual Studio IDE](https://visualstudio.microsoft.com) or the [Visual Studio Code](https://code.visualstudio.com)
+-   A [GitHub account](https://github.com/join)
+-   [Node.js 18 or later](https://nodejs.org)
+-   [.NET 9 SDK or later](https://dotnet.microsoft.com/download/dotnet)
+-   [Python 3.9 or later](https://www.python.org/downloads/)
+-   The [Azure CLI](/cli/azure/install-azure-cli)
+-   A code editor (recommended: [Visual Studio Code](https://code.visualstudio.com))
 
 ### Quickstart
 
-1. `git clone https://github.com/Azure-Samples/Orleans-Cluster-on-Azure-App-Service.git orleans-on-app-service`
-2. `cd orleans-on-app-service`
-3. `dotnet run --project Silo\Orleans.ShoppingCart.Silo.csproj`
+1. Clone the repository:
 
-### Acknowledgements
+    ```bash
+    git clone https://github.com/Azure-Samples/Orleans-Cluster-on-Azure-App-Service.git orleans-on-app-service
+    cd orleans-on-app-service
+    ```
 
-The Orleans.ShoppingCart.Silo project uses the following open 3rd party-source projects:
+2. Start all services:
+    ```bash
+    ./run-all-services.sh start
+    ```
 
-- [MudBlazor](https://github.com/MudBlazor/MudBlazor): Blazor Component Library based on Material design.
-- [Bogus](https://github.com/bchavez/Bogus): A simple fake data generator for C#, F#, and VB.NET.
-- [Blazorators](https://github.com/IEvangelist/blazorators): Source-generated packages for Blazor JavaScript interop.
+This will start:
 
-Derived from [IEvangelist/orleans-shopping-cart](https://github.com/IEvangelist/orleans-shopping-cart).
+-   React UI at http://localhost:3000
+-   Orleans API at http://localhost:5001
+-   Python API at http://localhost:8000 (API docs at http://localhost:8000/docs)
+
+### Service Management
+
+The `run-all-services.sh` script provides several commands:
+
+-   `start` - Start all services
+-   `stop` - Stop all services
+-   `status` - Check service status
+-   `logs` - View service logs
+-   `restart` - Restart all services
+-   `test` - Run integration tests
+
+## Project Structure
+
+-   `/shopping-cart-ui` - React frontend application
+-   `/Silo` - Orleans backend application
+-   `/python-inventory-service` - Python inventory microservice
+-   `/Abstractions` - Shared interfaces and models
+-   `/Grains` - Orleans grain implementations
+
+## Third-Party Dependencies
+
+### Frontend
+
+-   [React](https://reactjs.org)
+-   [Material-UI (MUI)](https://mui.com)
+-   [React Query](https://tanstack.com/query)
+-   [OpenTelemetry JS](https://opentelemetry.io/docs/js/)
+
+### Backend
+
+-   [MudBlazor](https://github.com/MudBlazor/MudBlazor)
+-   [Bogus](https://github.com/bchavez/Bogus)
+
+### Inventory Service
+
+-   [FastAPI](https://fastapi.tiangolo.com)
+-   [Uvicorn](https://www.uvicorn.org)
 
 ## Resources
 
-- [Deploy Orleans to Azure App Service](https://aka.ms/orleans-on-app-service)
+-   [Deploy Orleans to Azure App Service](https://aka.ms/orleans-on-app-service)
+-   [React Documentation](https://react.dev)
+-   [FastAPI Documentation](https://fastapi.tiangolo.com)
+
+## Acknowledgements
+
+Derived from [IEvangelist/orleans-shopping-cart](https://github.com/IEvangelist/orleans-shopping-cart).

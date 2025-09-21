@@ -9,8 +9,10 @@ set -e  # Exit on any error
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ORLEANS_SCRIPT="$PROJECT_DIR/run-orleans.sh"
 PYTHON_SCRIPT="$PROJECT_DIR/python-inventory-service/run-python-inventory.sh"
+REACT_SCRIPT="$PROJECT_DIR/shopping-cart-ui/run-react-ui.sh"
 ORLEANS_PORT=5001
 PYTHON_PORT=8000
+REACT_PORT=3000
 
 # Colors for output
 RED='\033[0;31m'
@@ -58,6 +60,14 @@ check_python_running() {
     fi
 }
 
+check_react_running() {
+    if lsof -i :$REACT_PORT >/dev/null 2>&1; then
+        return 0  # Running
+    else
+        return 1  # Not running
+    fi
+}
+
 # Check if services are healthy
 check_orleans_healthy() {
     curl -s http://localhost:$ORLEANS_PORT >/dev/null 2>&1
@@ -67,9 +77,13 @@ check_python_healthy() {
     curl -s http://localhost:$PYTHON_PORT/health >/dev/null 2>&1
 }
 
+check_react_healthy() {
+    curl -s http://localhost:$REACT_PORT >/dev/null 2>&1
+}
+
 # Start all services
 start_services() {
-    log_info "Starting Orleans Shopping Cart with Python Inventory Microservice"
+    log_info "Starting Orleans Shopping Cart with Python Inventory Microservice and React UI"
     echo ""
 
     # Verify scripts exist
@@ -83,9 +97,15 @@ start_services() {
         exit 1
     fi
 
+    if [ ! -f "$REACT_SCRIPT" ]; then
+        log_error "React script not found: $REACT_SCRIPT"
+        exit 1
+    fi
+
     # Check if services are already running
     local orleans_running=false
     local python_running=false
+    local react_running=false
 
     if check_orleans_running; then
         log_warning "Orleans application is already running on port $ORLEANS_PORT"
@@ -97,8 +117,13 @@ start_services() {
         python_running=true
     fi
 
-    if [ "$orleans_running" = true ] && [ "$python_running" = true ]; then
-        log_warning "Both services are already running"
+    if check_react_running; then
+        log_warning "React UI is already running on port $REACT_PORT"
+        react_running=true
+    fi
+
+    if [ "$orleans_running" = true ] && [ "$python_running" = true ] && [ "$react_running" = true ]; then
+        log_warning "All services are already running"
         show_status
         exit 0
     fi
@@ -157,6 +182,33 @@ start_services() {
         fi
     fi
 
+    # Start React UI
+    if [ "$react_running" = false ]; then
+        log_service "Starting React UI..."
+        "$REACT_SCRIPT" start
+
+        # Wait for React to be ready
+        log_info "Waiting for React UI to initialize..."
+        local count=0
+        local timeout=30
+
+        while [ $count -lt $timeout ]; do
+            if check_react_healthy; then
+                log_success "React UI is ready"
+                break
+            fi
+            sleep 1
+            count=$((count + 1))
+            echo -n "."
+        done
+        echo ""
+
+        if [ $count -eq $timeout ]; then
+            log_error "React UI failed to start within $timeout seconds"
+            exit 1
+        fi
+    fi
+
     # Test integration
     log_info "Testing service integration..."
     sleep 2
@@ -177,7 +229,13 @@ start_services() {
 stop_services() {
     log_info "Stopping all services..."
 
-    # Stop Orleans first (it may depend on Python service)
+    # Stop React UI first
+    if [ -f "$REACT_SCRIPT" ]; then
+        log_service "Stopping React UI..."
+        "$REACT_SCRIPT" stop 2>/dev/null || true
+    fi
+
+    # Stop Orleans next (it may depend on Python service)
     if [ -f "$ORLEANS_SCRIPT" ]; then
         log_service "Stopping Orleans Application..."
         "$ORLEANS_SCRIPT" stop 2>/dev/null || true
@@ -190,8 +248,13 @@ stop_services() {
     fi
 
     # Force kill any remaining processes on the ports
+    local react_pids=$(lsof -t -i :$REACT_PORT 2>/dev/null || true)
     local orleans_pids=$(lsof -t -i :$ORLEANS_PORT 2>/dev/null || true)
     local python_pids=$(lsof -t -i :$PYTHON_PORT 2>/dev/null || true)
+
+    if [ -n "$react_pids" ]; then
+        kill $react_pids 2>/dev/null || true
+    fi
 
     if [ -n "$orleans_pids" ]; then
         kill $orleans_pids 2>/dev/null || true
@@ -218,6 +281,18 @@ show_status() {
     echo ""
     log_info "Service Status Report"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+    # React UI status
+    if check_react_running; then
+        if check_react_healthy; then
+            log_success "React UI: RUNNING & HEALTHY"
+            echo "  URL: http://localhost:$REACT_PORT"
+        else
+            log_warning "React UI: RUNNING but not responding"
+        fi
+    else
+        log_error "React UI: NOT RUNNING"
+    fi
 
     # Orleans status
     if check_orleans_running; then
@@ -265,7 +340,8 @@ show_status() {
 # Show service URLs
 show_urls() {
     echo "🌐 Service URLs:"
-    echo "  Orleans Web App:        http://localhost:$ORLEANS_PORT"
+    echo "  React UI:               http://localhost:3000"
+    echo "  Orleans API:            http://localhost:$ORLEANS_PORT"
     echo "  Orleans API Test:       http://localhost:$ORLEANS_PORT/api/test/compare"
     echo "  Python API:             http://localhost:$PYTHON_PORT"
     echo "  Python API Docs:        http://localhost:$PYTHON_PORT/docs"
@@ -278,11 +354,19 @@ show_urls() {
     echo ""
 }
 
-# Show logs from both services
+# Show logs from all services
 show_logs() {
     echo ""
     log_info "Recent logs from all services"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+    echo ""
+    echo "🔹 React UI Logs (last 10 lines):"
+    if [ -f "$PROJECT_DIR/shopping-cart-ui/react-ui.log" ]; then
+        tail -10 "$PROJECT_DIR/shopping-cart-ui/react-ui.log"
+    else
+        echo "  No React UI log file found"
+    fi
 
     echo ""
     echo "🔹 Orleans Application Logs (last 10 lines):"
@@ -302,6 +386,7 @@ show_logs() {
 
     echo ""
     echo "To follow logs in real-time:"
+    echo "  React UI: tail -f $PROJECT_DIR/shopping-cart-ui/react-ui.log"
     echo "  Orleans:  tail -f $PROJECT_DIR/Silo/orleans-app.log"
     echo "  Python:   tail -f $PROJECT_DIR/python-inventory-service/inventory-service.log"
     echo ""
