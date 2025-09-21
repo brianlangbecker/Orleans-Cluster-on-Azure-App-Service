@@ -1,0 +1,117 @@
+@page "/products"
+@using ShoppingCart.Web.Models
+@using ShoppingCart.Web.Services
+@inject InventoryService InventoryService
+@inject IDialogService DialogService
+
+<MudContainer>
+    <MudText Typo="Typo.h4" Class="mb-4">Products</MudText>
+
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OpenCreateDialog" Class="mb-4">
+        Create Product
+    </MudButton>
+
+    @if (_products == null)
+    {
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+    }
+    else
+    {
+        <MudTable Items="@_products" Dense="true" Hover="true" Bordered="true" Striped="true">
+            <HeaderContent>
+                <MudTh>Name</MudTh>
+                <MudTh>Category</MudTh>
+                <MudTh>Price</MudTh>
+                <MudTh>Quantity</MudTh>
+                <MudTh>Actions</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Name">@context.Name</MudTd>
+                <MudTd DataLabel="Category">@context.Category</MudTd>
+                <MudTd DataLabel="Price">@context.UnitPrice.ToString("C")</MudTd>
+                <MudTd DataLabel="Quantity">@context.Quantity</MudTd>
+                <MudTd>
+                    <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => OpenEditDialog(context))">Edit
+                    </MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Error" OnClick="@(() => DeleteProduct(context))">Delete
+                    </MudButton>
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+</MudContainer>
+
+@code {
+    private HashSet<Product>? _products;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProducts();
+    }
+
+    private async Task LoadProducts()
+    {
+        _products = await InventoryService.GetAllProductsAsync();
+    }
+
+    private async Task OpenCreateDialog()
+    {
+        var parameters = new DialogParameters
+{
+{ "Product", new Product
+{
+Id = Guid.NewGuid().ToString(),
+Name = "",
+Description = "",
+Category = ProductCategory.Other,
+Quantity = 0,
+UnitPrice = 0,
+DetailsUrl = "",
+ImageUrl = ""
+}
+},
+{ "Title", "Create Product" }
+};
+
+        var dialog = await DialogService.ShowAsync<ProductDialog>("Create Product", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadProducts();
+        }
+    }
+
+    private async Task OpenEditDialog(Product product)
+    {
+        var parameters = new DialogParameters
+{
+{ "Product", product },
+{ "Title", "Edit Product" }
+};
+
+        var dialog = await DialogService.ShowAsync<ProductDialog>("Edit Product", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadProducts();
+        }
+    }
+
+    private async Task DeleteProduct(Product product)
+    {
+        var result = await DialogService.ShowMessageBox(
+        "Delete Product",
+        "Are you sure you want to delete this product?",
+        yesText: "Delete",
+        noText: "Cancel"
+        );
+
+        if (result == true)
+        {
+            await InventoryService.RemoveProductAsync(product.Id);
+            await LoadProducts();
+        }
+    }
+}

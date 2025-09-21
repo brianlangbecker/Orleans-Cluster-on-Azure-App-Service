@@ -10,6 +10,7 @@ using OpenTelemetry.Trace;
 using OpenTelemetry.Instrumentation.AspNetCore;
 using OpenTelemetry.Instrumentation.Http;
 using Orleans.ShoppingCart.Silo.Services;
+using System.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,7 +19,8 @@ if (builder.Environment.IsDevelopment())
     builder.UseOrleans(siloBuilder =>
     {
         siloBuilder.UseLocalhostClustering()
-                  .AddMemoryGrainStorage("shopping-cart");
+                  .AddMemoryGrainStorage("shopping-cart")
+                  .AddActivityPropagation();  // Enable activity propagation for tracing
     });
 }
 else
@@ -57,7 +59,8 @@ else
             {
                 options.TableServiceClient = new TableServiceClient(new Uri(builder.Configuration["ORLEANS_AZURE_STORAGE_URI"]!), new DefaultAzureCredential());
                 options.TableName = $"{builder.Configuration["ORLEANS_CLUSTER_ID"]}Persistence";
-            });
+            })
+        .AddActivityPropagation();
     });
 }
 
@@ -79,27 +82,62 @@ services.AddLocalStorageServices();
 // Configure OpenTelemetry
 services.AddOpenTelemetry()
     .WithTracing(builder => builder
+        // Focus on business logic traces, not Orleans internals
+        .AddSource("Orleans.ShoppingCart.API")  // Our custom controller source
         .AddSource("Orleans.ShoppingCart")
-        .AddSource("Orleans.ShoppingCart.API")
         .AddSource("Orleans.ShoppingCart.Services")
+        .AddSource("System.Net.Http")  // HTTP client calls
+        // Only add specific Orleans sources we care about, not all runtime internals
         .SetResourceBuilder(ResourceBuilder.CreateDefault()
-            .AddService("orleans-shopping-cart"))
-        .AddAspNetCoreInstrumentation()
+            .AddService("orleans-shopping-cart")
+            .AddAttributes(new Dictionary<string, object>
+            {
+                { "service.instance.id", Environment.MachineName },
+                { "deployment.environment", Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "development" },
+                { "app.type", "orleans" },
+                { "app.framework", "dotnet" }
+            }))
+        .AddAspNetCoreInstrumentation(options =>
+        {
+            options.RecordException = true;
+            // Capture all requests including API calls
+            options.Filter = ctx => true;  // Don't filter anything for now
+            options.EnrichWithHttpRequest = (activity, httpRequest) =>
+            {
+                activity?.SetTag("http.request.method", httpRequest.Method);
+                activity?.SetTag("http.request.path", httpRequest.Path.Value);
+                activity?.SetTag("http.request.query", httpRequest.QueryString.Value);
+            };
+            options.EnrichWithHttpResponse = (activity, httpResponse) =>
+            {
+                activity?.SetTag("http.response.status_code", httpResponse.StatusCode);
+            };
+            options.EnrichWithException = (activity, exception) =>
+            {
+                activity?.SetTag("error", true);
+                activity?.SetTag("error.type", exception.GetType().Name);
+                activity?.SetTag("error.message", exception.Message);
+            };
+        })
         .AddHttpClientInstrumentation(options =>
         {
+            options.RecordException = true;
+            options.FilterHttpRequestMessage = req => true;  // Capture all HTTP requests
             options.EnrichWithHttpRequestMessage = (activity, httpRequestMessage) =>
             {
-                activity?.SetTag("http.request.method", httpRequestMessage.Method.ToString());
-                activity?.SetTag("http.request.uri", httpRequestMessage.RequestUri?.ToString());
+                activity?.SetTag("http.client.method", httpRequestMessage.Method.ToString());
+                activity?.SetTag("http.client.uri", httpRequestMessage.RequestUri?.ToString());
             };
             options.EnrichWithHttpResponseMessage = (activity, httpResponseMessage) =>
             {
-                activity?.SetTag("http.response.status_code", (int)httpResponseMessage.StatusCode);
+                activity?.SetTag("http.client.status_code", (int)httpResponseMessage.StatusCode);
             };
         })
         .AddOtlpExporter(options =>
         {
-            options.Endpoint = new Uri(Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT") ?? "http://localhost:4318");
+            var endpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT") ?? "http://localhost:4318";
+            options.Endpoint = new Uri($"{endpoint}/v1/traces");
+            options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
             if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("HONEYCOMB_API_KEY")))
             {
                 options.Headers = $"x-honeycomb-team={Environment.GetEnvironmentVariable("HONEYCOMB_API_KEY")}";

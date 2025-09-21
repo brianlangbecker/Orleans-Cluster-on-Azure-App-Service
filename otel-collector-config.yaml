@@ -20,6 +20,10 @@ exporters:
       "x-honeycomb-team": "${HONEYCOMB_API_KEY}"
 
 service:
+  telemetry:
+    logs:
+      level: "debug"
+      development: true
   pipelines:
     traces:
       receivers: [otlp]
