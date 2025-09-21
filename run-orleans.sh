@@ -94,7 +94,7 @@ start_application() {
     
     # Start application in background with hardcoded environment variables
     ASPNETCORE_ENVIRONMENT=Development \
-    OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4318/v1/traces" \
+    OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4318" \
     nohup dotnet run --urls "http://localhost:$PORT" > "$LOG_FILE" 2>&1 &
     local app_pid=$!
 
