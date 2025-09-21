@@ -171,25 +171,8 @@ app.UseStaticFiles(new StaticFileOptions
 });
 
 app.UseRouting();
+app.MapControllers(); // Map API controllers first
 
 // SPA fallback for React Router - serve index.html for all non-API routes
-app.Use(async (context, next) =>
-{
-    var path = context.Request.Path.Value?.ToLower() ?? "";
-    
-    // Don't handle API calls, health checks, static assets, or Blazor routes
-    if (path.StartsWith("/api") || path.StartsWith("/health") || 
-        path.StartsWith("/assets") || path.Contains(".") ||
-        path.StartsWith("/_blazor") || path.StartsWith("/_framework"))
-    {
-        await next();
-        return;
-    }
-    
-    // For all other routes, serve the React app index.html
-    context.Request.Path = "/index.html";
-    await next();
-});
-
-app.MapControllers(); // Map API controllers
+app.MapFallbackToFile("index.html");
 await app.RunAsync();

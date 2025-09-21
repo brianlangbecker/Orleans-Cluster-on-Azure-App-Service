@@ -1,25 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import './Layout.css';
+import { useCart } from '../../context/CartContext';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const [cartCount, setCartCount] = useState(0);
-
-  useEffect(() => {
-    // Load cart count
-    fetch('/api/shop/cart')
-      .then(r => r.json())
-      .then(data => {
-        if (data.success) {
-          setCartCount(data.count);
-        }
-      })
-      .catch(console.error);
-  }, []);
+  const { cartCount } = useCart();
 
   return (
     <div className="app">
@@ -31,6 +20,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <li><Link to="/">Home</Link></li>
               <li><Link to="/shop">Shop</Link></li>
               <li><Link to="/cart">Cart <span className="cart-badge">{cartCount}</span></Link></li>
+              <li><Link to="/products">Products</Link></li>
               <li><Link to="/admin">Admin</Link></li>
             </ul>
           </nav>

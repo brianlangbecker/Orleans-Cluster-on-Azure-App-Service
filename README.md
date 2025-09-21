@@ -8,6 +8,12 @@ A modern shopping cart application built with Microsoft Orleans and React. This 
 -   **Orleans Backend**: Scalable, distributed .NET application
 -   **Python Inventory Service**: FastAPI-based microservice
 
+## 🚀 Quick Start
+
+1. **Clone and start**: `./run-all-services.sh start`
+2. **Open application**: http://localhost:3000
+3. **Start shopping!** Browse products, add to cart, and test the full experience
+
 ## Features
 
 ### Frontend (React)
@@ -72,9 +78,22 @@ The app is architected as follows:
 
 This will start:
 
--   React UI at http://localhost:3000
--   Orleans API at http://localhost:5001
+-   **React UI at http://localhost:3000** ← **Main Application**
+-   Orleans API at http://localhost:5001 (backend API only)
 -   Python API at http://localhost:8000 (API docs at http://localhost:8000/docs)
+
+## 🚀 **Access the Application**
+
+**Main Application**: http://localhost:3000
+
+The React frontend provides the complete shopping cart experience with:
+
+-   Product browsing and management
+-   Shopping cart functionality
+-   Real-time cart updates
+-   Professional UI with Material-UI components
+
+The Orleans API (port 5001) serves as the backend and is consumed by the React frontend.
 
 ### Service Management
 

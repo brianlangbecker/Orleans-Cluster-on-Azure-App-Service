@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../theme/ShopPage.css';
+import { useCart } from '../context/CartContext';
 
 interface Product {
   id: string;
@@ -22,13 +23,12 @@ const ShopPage: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [cartCount, setCartCount] = useState(0);
   const [addingToCart, setAddingToCart] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const { cartCount, updateCartCount } = useCart();
 
   useEffect(() => {
     loadProducts();
-    loadCartCount();
   }, []);
 
   const loadProducts = async () => {
@@ -48,17 +48,6 @@ const ShopPage: React.FC = () => {
     }
   };
 
-  const loadCartCount = async () => {
-    try {
-      const response = await fetch('/api/shop/cart');
-      const data = await response.json();
-      if (data.success) {
-        setCartCount(data.count);
-      }
-    } catch (err) {
-      console.error('Error loading cart count:', err);
-    }
-  };
 
   const addToCart = async (productId: string, quantity: number = 1) => {
     setAddingToCart(productId);
@@ -74,7 +63,7 @@ const ShopPage: React.FC = () => {
       const data = await response.json();
       
       if (data.success) {
-        setCartCount(data.cartCount);
+        await updateCartCount(); // Update the global cart count
         setMessage(data.message);
         setTimeout(() => setMessage(null), 3000);
       } else {

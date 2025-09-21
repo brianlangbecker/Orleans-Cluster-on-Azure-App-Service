@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../theme/CartPage.css';
+import { useCart } from '../context/CartContext';
 
 interface CartItem {
   productId: string;
@@ -24,6 +25,8 @@ const CartPage: React.FC = () => {
   const [updating, setUpdating] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [totalPrice, setTotalPrice] = useState(0);
+  const [showCheckoutPopup, setShowCheckoutPopup] = useState(false);
+  const { updateCartCount } = useCart();
 
   useEffect(() => {
     loadCart();
@@ -64,6 +67,7 @@ const CartPage: React.FC = () => {
       
       if (data.success) {
         await loadCart(); // Reload to get updated totals
+        await updateCartCount(); // Update global cart count
         setMessage(data.message);
         setTimeout(() => setMessage(null), 3000);
       } else {
@@ -79,6 +83,7 @@ const CartPage: React.FC = () => {
   };
 
   const removeItem = async (productId: string) => {
+    console.log('Remove item clicked for product:', productId);
     setUpdating(productId);
     try {
       const response = await fetch(`/api/shop/cart/remove/${productId}`, {
@@ -86,9 +91,12 @@ const CartPage: React.FC = () => {
       });
 
       const data = await response.json();
+      console.log('Remove item response:', data);
       
       if (data.success) {
+        console.log('Item removed successfully, reloading cart...');
         await loadCart(); // Reload to get updated cart
+        await updateCartCount(); // Update global cart count
         setMessage(data.message);
         setTimeout(() => setMessage(null), 3000);
       } else {
@@ -96,9 +104,11 @@ const CartPage: React.FC = () => {
         setTimeout(() => setError(null), 3000);
       }
     } catch (err) {
+      console.error('Error removing item:', err);
       setError('Error removing item: ' + (err as Error).message);
       setTimeout(() => setError(null), 3000);
     } finally {
+      console.log('Setting updating to null for product:', productId);
       setUpdating(null);
     }
   };
@@ -115,6 +125,7 @@ const CartPage: React.FC = () => {
       if (data.success) {
         setCartItems([]);
         setTotalPrice(0);
+        await updateCartCount(); // Update global cart count
         setMessage(data.message);
         setTimeout(() => setMessage(null), 3000);
       } else {
@@ -127,6 +138,14 @@ const CartPage: React.FC = () => {
     } finally {
       setUpdating(null);
     }
+  };
+
+  const handleCheckout = () => {
+    setShowCheckoutPopup(true);
+  };
+
+  const closeCheckoutPopup = () => {
+    setShowCheckoutPopup(false);
   };
 
   if (loading) {
@@ -253,13 +272,51 @@ const CartPage: React.FC = () => {
                     'Clear Cart'
                   )}
                 </button>
-                <button className="btn btn-primary checkout-btn">
+                <button 
+                  onClick={handleCheckout}
+                  className="btn btn-primary checkout-btn"
+                >
                   Proceed to Checkout
                 </button>
               </div>
             </div>
           </div>
         </>
+      )}
+
+      {/* Checkout Popup */}
+      {showCheckoutPopup && (
+        <div className="popup-overlay" onClick={closeCheckoutPopup}>
+          <div className="popup-content" onClick={(e) => e.stopPropagation()}>
+            <div className="popup-header">
+              <h3>🚧 Feature Under Development</h3>
+              <button className="popup-close" onClick={closeCheckoutPopup}>×</button>
+            </div>
+            <div className="popup-body">
+              <p>
+                <strong>Checkout functionality is currently being worked on!</strong>
+              </p>
+              <p>
+                Our development team is actively building the checkout process. 
+                This feature will include:
+              </p>
+              <ul>
+                <li>✅ Payment processing</li>
+                <li>✅ Order confirmation</li>
+                <li>✅ Shipping options</li>
+                <li>✅ Email notifications</li>
+              </ul>
+              <p>
+                <em>Expected completion: Coming soon!</em>
+              </p>
+            </div>
+            <div className="popup-footer">
+              <button className="btn btn-primary" onClick={closeCheckoutPopup}>
+                Got it!
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

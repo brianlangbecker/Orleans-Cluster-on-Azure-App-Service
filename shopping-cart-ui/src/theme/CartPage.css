@@ -374,3 +374,136 @@
     font-size: 1.2rem;
   }
 }
+
+/* Popup Styles */
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.popup-content {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 15px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  animation: slideIn 0.3s ease-out;
+  color: white;
+}
+
+.popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.popup-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.popup-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 2rem;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.popup-close:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.popup-body {
+  padding: 1.5rem 2rem;
+  line-height: 1.6;
+}
+
+.popup-body p {
+  margin-bottom: 1rem;
+}
+
+.popup-body ul {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+}
+
+.popup-body li {
+  margin-bottom: 0.5rem;
+}
+
+.popup-footer {
+  padding: 1rem 2rem 1.5rem;
+  text-align: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.popup-footer .btn {
+  min-width: 120px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Mobile responsive for popup */
+@media (max-width: 768px) {
+  .popup-content {
+    margin: 1rem;
+    width: calc(100% - 2rem);
+  }
+  
+  .popup-header {
+    padding: 1rem 1.5rem 0.5rem;
+  }
+  
+  .popup-body {
+    padding: 1rem 1.5rem;
+  }
+  
+  .popup-footer {
+    padding: 0.5rem 1.5rem 1rem;
+  }
+  
+  .popup-header h3 {
+    font-size: 1.3rem;
+  }
+}

@@ -472,9 +472,21 @@ public class ShopController : ControllerBase
         {
             _logger.LogInformation("Deleting product: {ProductId}", productId);
             
-            // Remove from inventory (using default category)
-            var inventoryGrain = _grainFactory.GetGrain<IInventoryGrain>("general");
+            // First, get the product details to know which category it belongs to
+            var productGrain = _grainFactory.GetGrain<IProductGrain>(productId);
+            var productDetails = await productGrain.GetProductDetailsAsync();
+            
+            if (productDetails == null)
+            {
+                return NotFound(new { success = false, error = $"Product '{productId}' not found" });
+            }
+            
+            // Remove from the correct category-specific inventory grain
+            var categoryName = productDetails.Category.ToString();
+            var inventoryGrain = _grainFactory.GetGrain<IInventoryGrain>(categoryName);
             await inventoryGrain.RemoveProductAsync(productId);
+            
+            _logger.LogInformation("Removed product {ProductId} from {Category} inventory", productId, categoryName);
             
             // Note: Product grains don't have explicit delete - they'll be garbage collected when no longer referenced
             
@@ -485,6 +497,7 @@ public class ShopController : ControllerBase
             };
             
             activity?.SetTag("success", true);
+            activity?.SetTag("product.category", categoryName);
             
             return Ok(result);
         }
