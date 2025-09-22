@@ -49,24 +49,70 @@ A modern shopping cart application built with Microsoft Orleans and React. This 
 
 The modern React + Orleans shopping cart application is architected as follows:
 
-![React + Orleans Shopping Cart Architecture](media/react-orleans-architecture.svg)
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                          👤 User Browser                        │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │ HTTP Requests
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              ⚛️ React Frontend (Port 3000)                     │
+│                    🎯 Main Application                          │
+│                                                                 │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
+│  │ Shop Page   │  │Products Page│  │ Cart Page   │             │
+│  │ Browse &    │  │ CRUD Ops &  │  │ Manage &    │             │
+│  │ Add Items   │  │ Random Data │  │ Checkout    │             │
+│  └─────────────┘  └─────────────┘  └─────────────┘             │
+│                                                                 │
+│           🔄 Global Cart Context (Real-time Sync)               │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │ REST API Calls (/api/shop/*)
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│               🏛️ Orleans Backend (Port 5001)                   │
+│                      API Server Only                           │
+│                                                                 │
+│  ┌─────────────────┐              ┌─────────────────────────┐   │
+│  │ API Controllers │─────────────▶│    Orleans Grains       │   │
+│  │ REST Endpoints  │              │                         │   │
+│  └─────────────────┘              │ ┌─────┐ ┌─────┐ ┌─────┐ │   │
+│                                   │ │Prod │ │Inv  │ │Cart │ │   │
+│                                   │ │Grain│ │Grain│ │Grain│ │   │
+│                                   │ └─────┘ └─────┘ └─────┘ │   │
+│                                   └─────────────────────────┘   │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │ HTTP Calls
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│          🐍 Python Service (Port 8000)                         │
+│         FastAPI Inventory & Health Monitoring                  │
+└─────────────────────────────────────────────────────────────────┘
+
+                              📊 OpenTelemetry
+                        ┌─────────────────────────┐
+                        │   Distributed Tracing   │
+                        │   & Monitoring across   │
+                        │     all services        │
+                        └─────────────────────────┘
+```
 
 ### Architecture Overview
 
 This application demonstrates a **modern polyglot microservices architecture** with:
 
-- **React Frontend (Port 3000)**: The main user interface with Material-UI components, global state management via React Context, and real-time cart synchronization
-- **Orleans Backend (Port 5001)**: Distributed .NET application with grain-based architecture for scalable state management and business logic
-- **Python Microservice (Port 8000)**: FastAPI-based inventory service demonstrating polyglot integration
-- **OpenTelemetry Observability**: End-to-end distributed tracing and monitoring with Honeycomb integration
+-   **React Frontend (Port 3000)**: The main user interface with Material-UI components, global state management via React Context, and real-time cart synchronization
+-   **Orleans Backend (Port 5001)**: Distributed .NET application with grain-based architecture for scalable state management and business logic
+-   **Python Microservice (Port 8000)**: FastAPI-based inventory service demonstrating polyglot integration
+-   **OpenTelemetry Observability**: End-to-end distributed tracing and monitoring with Honeycomb integration
 
 ### Key Architectural Benefits
 
-- **Real-time Synchronization**: Cart state updates instantly across all UI components
-- **Distributed Scalability**: Orleans grains provide automatic scaling and fault tolerance
-- **Category-based Data Management**: Inventory organized by product categories for optimal performance
-- **Professional UX**: Loading states, animations, and error handling throughout
-- **Comprehensive Observability**: Full request tracing from React through Orleans to Python services
+-   **Real-time Synchronization**: Cart state updates instantly across all UI components
+-   **Distributed Scalability**: Orleans grains provide automatic scaling and fault tolerance
+-   **Category-based Data Management**: Inventory organized by product categories for optimal performance
+-   **Professional UX**: Loading states, animations, and error handling throughout
+-   **Comprehensive Observability**: Full request tracing from React through Orleans to Python services
 
 ## Getting Started
 
