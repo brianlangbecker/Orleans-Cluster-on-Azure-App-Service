@@ -155,7 +155,3 @@ The `run-all-services.sh` script provides several commands:
 -   [Deploy Orleans to Azure App Service](https://aka.ms/orleans-on-app-service)
 -   [React Documentation](https://react.dev)
 -   [FastAPI Documentation](https://fastapi.tiangolo.com)
-
-## Acknowledgements
-
-Derived from [IEvangelist/orleans-shopping-cart](https://github.com/IEvangelist/orleans-shopping-cart).
