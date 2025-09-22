@@ -94,7 +94,7 @@ The modern React + Orleans shopping cart application is architected as follows:
                     │  📊 OTEL Collector     │
                     │                        │
                     │  • Receives traces     │◀─── React Frontend
-                    │  • Processes data      │◀─── Orleans Backend  
+                    │  • Processes data      │◀─── Orleans Backend
                     │  • Batches & exports   │◀─── Python Service
                     └─────────┬───────────────┘
                               │ OTLP Protocol
