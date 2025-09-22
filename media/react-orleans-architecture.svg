@@ -1,0 +1,111 @@
+<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .title { font: bold 16px sans-serif; text-anchor: middle; }
+      .subtitle { font: 12px sans-serif; text-anchor: middle; }
+      .label { font: 11px sans-serif; text-anchor: middle; }
+      .tech { font: 9px sans-serif; text-anchor: middle; fill: #666; }
+      .layer { fill: none; stroke: #333; stroke-width: 2; }
+      .component { fill: #f8f9fa; stroke: #333; stroke-width: 1; }
+      .react { fill: #61dafb; stroke: #333; }
+      .orleans { fill: #512bd4; stroke: #333; }
+      .python { fill: #3776ab; stroke: #333; }
+      .otel { fill: #ff6b35; stroke: #333; }
+      .arrow { fill: none; stroke: #333; stroke-width: 2; marker-end: url(#arrowhead); }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="400" y="25" class="title">React + Orleans Shopping Cart Architecture</text>
+
+  <!-- User Layer -->
+  <rect x="50" y="50" width="700" height="60" class="layer" fill="#e3f2fd"/>
+  <text x="400" y="75" class="subtitle">👤 User Browser</text>
+  <text x="400" y="95" class="tech">HTTP/HTTPS Requests</text>
+
+  <!-- React Frontend Layer -->
+  <rect x="50" y="130" width="700" height="120" class="react"/>
+  <text x="400" y="150" class="subtitle" fill="white">⚛️ React Frontend (Port 3000) - Main Application</text>
+  
+  <!-- React Components -->
+  <rect x="70" y="165" width="120" height="70" class="component"/>
+  <text x="130" y="185" class="label">Shop Page</text>
+  <text x="130" y="200" class="tech">Browse & Add to Cart</text>
+  <text x="130" y="215" class="tech">Real-time Updates</text>
+  
+  <rect x="210" y="165" width="120" height="70" class="component"/>
+  <text x="270" y="185" class="label">Products Page</text>
+  <text x="270" y="200" class="tech">CRUD Operations</text>
+  <text x="270" y="215" class="tech">Random Generator</text>
+  
+  <rect x="350" y="165" width="120" height="70" class="component"/>
+  <text x="410" y="185" class="label">Cart Page</text>
+  <text x="410" y="200" class="tech">Manage Cart</text>
+  <text x="410" y="215" class="tech">Checkout UI</text>
+  
+  <rect x="490" y="165" width="120" height="70" class="component"/>
+  <text x="550" y="185" class="label">Cart Context</text>
+  <text x="550" y="200" class="tech">Global State</text>
+  <text x="550" y="215" class="tech">Synchronization</text>
+
+  <text x="630" y="240" class="tech">TypeScript • Material-UI • Context API</text>
+
+  <!-- Orleans Backend Layer -->
+  <rect x="50" y="270" width="700" height="150" class="orleans"/>
+  <text x="400" y="290" class="subtitle" fill="white">🏛️ Orleans Backend (Port 5001) - API Server</text>
+  
+  <!-- API Controllers -->
+  <rect x="70" y="305" width="200" height="45" class="component"/>
+  <text x="170" y="325" class="label">API Controllers</text>
+  <text x="170" y="340" class="tech">REST Endpoints • /api/shop/*</text>
+  
+  <!-- Orleans Grains -->
+  <rect x="290" y="305" width="100" height="45" class="component"/>
+  <text x="340" y="320" class="label">ProductGrain</text>
+  <text x="340" y="335" class="tech">CRUD & State</text>
+  
+  <rect x="410" y="305" width="100" height="45" class="component"/>
+  <text x="460" y="320" class="label">InventoryGrain</text>
+  <text x="460" y="335" class="tech">Categories</text>
+  
+  <rect x="530" y="305" width="100" height="45" class="component"/>
+  <text x="580" y="320" class="label">CartGrain</text>
+  <text x="580" y="335" class="tech">Cart Ops</text>
+
+  <text x="400" y="375" class="tech" fill="white">.NET 9 • Orleans • ASP.NET Core • Entity Framework</text>
+  <text x="400" y="390" class="tech" fill="white">Distributed Grains • Persistent State • Auto-scaling</text>
+
+  <!-- Python Service Layer -->
+  <rect x="50" y="440" width="300" height="80" class="python"/>
+  <text x="200" y="460" class="subtitle" fill="white">🐍 Python Service (Port 8000)</text>
+  <rect x="70" y="475" width="260" height="35" class="component"/>
+  <text x="200" y="495" class="label">FastAPI Inventory Service</text>
+  <text x="200" y="510" class="tech">Product Catalog • Health Monitoring</text>
+
+  <!-- OpenTelemetry Layer -->
+  <rect x="400" y="440" width="350" height="80" class="otel"/>
+  <text x="575" y="460" class="subtitle" fill="white">📊 Observability (OTEL Collector)</text>
+  <rect x="420" y="475" width="310" height="35" class="component"/>
+  <text x="575" y="495" class="label">Distributed Tracing & Monitoring</text>
+  <text x="575" y="510" class="tech">Honeycomb • Performance Analytics</text>
+
+  <!-- Arrows -->
+  <line x1="400" y1="110" x2="400" y2="130" class="arrow"/>
+  <line x1="400" y1="250" x2="400" y2="270" class="arrow"/>
+  <line x1="200" y1="350" x2="200" y2="440" class="arrow"/>
+  <line x1="575" y1="350" x2="575" y2="440" class="arrow"/>
+
+  <!-- Flow Labels -->
+  <text x="450" y="125" class="tech">REST API Calls</text>
+  <text x="450" y="265" class="tech">Grain Invocations</text>
+  <text x="130" y="435" class="tech">HTTP Calls</text>
+  <text x="620" y="435" class="tech">Traces & Metrics</text>
+
+  <!-- Key Features Box -->
+  <rect x="50" y="540" width="700" height="50" fill="#f8f9fa" stroke="#333" stroke-width="1"/>
+  <text x="400" y="560" class="subtitle">✨ Key Features</text>
+  <text x="400" y="575" class="tech">Real-time Cart Sync • Professional UI/UX • Distributed Architecture • End-to-End Tracing • Category-based Inventory • Polyglot Microservices</text>
+</svg>
